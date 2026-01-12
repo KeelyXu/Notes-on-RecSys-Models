@@ -1,5 +1,7 @@
 # MIND (Multi-Interest Network with Dynamic Routing)
 
+:warning: **如有无法正常渲染的公式，可移步至同文件夹下的jupyter notebook**
+
 **MIND的基本思想**：使用**多个**向量而不是一个单一向量来表示用户的多个兴趣层面（比如，用户可能既对服装感兴趣又对数码产品感兴趣）。简单来说，它会自动把用户行为按照兴趣类型进行分组，并为每组兴趣生成一个专门的兴趣向量。
 
 MIND的整体网络架构组成：
