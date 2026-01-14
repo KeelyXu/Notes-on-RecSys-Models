@@ -38,8 +38,8 @@ Models are organized by the stage they are typically used in a recommendation pi
 
 | Model | Paper / Source | Code | Note | Status |
 | :--- | :--- | :---: | :---: | :---: |
-| **YoutubeDNN** | [Deep Neural Networks for YouTube Recommendations](https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf) | [Link](Classic Models/Recall/YouTubeDNN/model.py) | [📝](Classic Models/Recall/YouTubeDNN/README.md ) | 📅 |
-| **MIND** | [Multi-Interest Network with Dynamic Routing for Recommendation at Tmall](https://arxiv.org/pdf/1904.08030) | [Link](Classic Models/Recall/MIND/model.py) | [📝](Classic Models/Recall/MIND/README.md ) | ✅ |
+| **YoutubeDNN** | [Deep Neural Networks for YouTube Recommendations](https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf) | [Link](Classic%20Models/Recall/YouTubeDNN/model.py) | [📝](Classic Models/Recall/YouTubeDNN/README.md ) | 📅 |
+| **MIND** | [Multi-Interest Network with Dynamic Routing for Recommendation at Tmall](https://arxiv.org/pdf/1904.08030) | [Link](Classic%20Models/Recall/MIND/model.py) | [📝](Classic Models/Recall/MIND/README.md ) | ✅ |
 
 ### 2. Ranking
 > *Goal: Accurately predict user preference (CTR/CVR) for the retrieved items to sort them.*
