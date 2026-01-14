@@ -5,6 +5,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from Utils.metrics import recall_at_k, hit_rate_at_k
 from Datasets.AmazonReview.utils import read_csv_in_dir
 from Datasets.AmazonReview.Dataset import RecallDataset
 from model import MIND
@@ -54,18 +55,11 @@ def test(model, test_set, top_k=30):
             logits = torch.matmul(caps, item_embeds.T)          # [batch_size, K, num_items]
             max_logits = logits.max(dim=1).values.detach().numpy()     # [batch_size, num_items]
             # get top_k with the highest logits
-            res = np.argpartition(max_logits, kth=num_items - top_k, axis=1)[:, -top_k:]  # [batch_size, top_k]
-            for recall_items, target_items in zip(res, target_items):
-                hits = 0
-                recall_items = set(recall_items)
-                for item in target_items:
-                    if item in recall_items:
-                        hits += 1
+            recall_items = np.argpartition(max_logits, kth=num_items - top_k, axis=1)[:, -top_k:]  # [batch_size, top_k]
+            recall_items = recall_items.tolist()
 
-                recalls.append(hits / len(target_items))
-                hit_rates.append(1 if hits > 0 else 0)
-
-    print(f"recall@{top_k}: {np.mean(recalls)}, hitRate@{top_k}: {np.mean(hit_rates)}")
+    print(f"recall@{top_k}: {recall_at_k(target_items, recall_items, top_k)}, "
+          f"hitRate@{top_k}: {hit_rate_at_k(target_items, recall_items, top_k)}")
 
 
 if __name__ == "__main__":
@@ -114,6 +108,7 @@ if __name__ == "__main__":
 
     # get histories for each user
     history = df.groupby('userId')['itemId'].apply(list).to_dict()
+    print(f"Avg history length: {df.groupby('userId')['itemId'].size().mean()}")
 
     train_samples = []
     for userId in train_users:

@@ -121,7 +121,7 @@ class MIND(nn.Module):
             history: [batch_size, max_len]
             p: float
         Returns:
-
+            tensor, tensor: [batch_size, self.num_neg + 1], [batch_size, self.num_neg + 1]
         """
         batch_size = caps.shape[0]
         # negative items should not be in the history as well as be the target item
