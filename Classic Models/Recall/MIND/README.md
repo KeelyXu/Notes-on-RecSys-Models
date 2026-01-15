@@ -59,10 +59,12 @@ $\mathcal{I_u}, \mathcal{P_u}, \mathcal{F_i}$中的特征通常都包含高基�
 > $$
 > 其中 $S_{ij}$ 是要学习的权重矩阵，首次计算时没有 $\vec{\mathbf{c}}_j^h$，可以直接将 $b_{ij}$ 初始化为0。
 >
-> 每个上层的胶囊 $\vec{\mathbf{c}}_j^h,j=1,2,...,n$ 都会受到下层所有胶囊的影响，前面得到的logit就决定了下层第 $i$ 个胶囊对上层第 $j$ 个胶囊的影响程度：
+> 每个上层的胶囊 $\vec{\mathbf{c}}_j^h,j=1,2,...,n$ 都会受到下层所有胶囊的影响，前面得到的logit就决定了下层第 $i$ 个胶囊与上层第 $j$ 个胶囊之间的交互强度：
 > $$
 > w_{ij} = \frac{\exp(b_{ij})}{\sum_{k=1}^{m} \exp(b_{ik})}
 > $$
+> （😕论文中的这个公式似乎有点小问题，应该是 $w_{ij} = \frac{\exp(b_{ij})}{\sum_{k=1}^{n} \exp(b_{ik})}$？）
+>
 > 然后计算 $\vec{\mathbf{z}}_j^{\,h} = \sum_{i=1}^{m} w_{ij}\, S_{ij}\, \vec{\mathbf{c}}_i^{\,l}$，再进行squash操作（$\vec{\mathbf{c}}_j^{\,h} = \text{squash}(\vec{\mathbf{z}}_j^{\,h}) = \frac{\|\vec{\mathbf{z}}_j^{\,h}\|^2}{1 + \|\vec{\mathbf{z}}_j^{\,h}\|^2} \frac{\vec{\mathbf{z}}_j^{\,h}}{\|\vec{\mathbf{z}}_j^{\,h}\|}$）就得到了更新后的 $\vec{\mathbf{c}}_j^{\,h}$。这样就完成了一次迭代。经过给定的迭代次数后，$\vec{\mathbf{c}}_j^{\,h}$ 就固定了，作为后面的层的输入。
 >
 > #### 为什么借鉴胶囊网络？
@@ -81,9 +83,9 @@ $\mathcal{I_u}, \mathcal{P_u}, \mathcal{F_i}$中的特征通常都包含高基�
   - 对不同的用户 $u$，$\mathcal{I_u}$ 的大小可能差别很大（$m$ 的差别可能很大），如果 $S_{ij}$ 不共享，泛化性能一般不好
   - 我们希望各个胶囊是在同一个向量空间的，但是不同的 $S_{ij}$ 矩阵会将胶囊映射到不同的向量空间
 
-  这样，路由的logit就可以通过如下方式计算：
+  这样，路由的logit就可以通过如下方式更新：
   $$
-  b_{ij} = \vec{\mathbf{u}}_j^T S \vec{\mathbf{e}}_i, \quad i \in \mathcal{I}_u, j \in \{1, \dots, K\}
+  b_{ij} = b_{ij} + \vec{\mathbf{u}}_j^T S \vec{\mathbf{e}}_i, \quad i \in \mathcal{I}_u, j \in \{1, \dots, K\}
   $$
   其中 $\vec{\mathbf{u}}_j$ 是表示用户兴趣 $j$ 的胶囊，$\vec{\mathbf{e}}_i$ 是之前提到过的物品向量（对应于物品胶囊），两个向量的维度都是 $d$。
 
@@ -93,7 +95,7 @@ $\mathcal{I_u}, \mathcal{P_u}, \mathcal{F_i}$中的特征通常都包含高基�
   $$
   K'_u = \max(1, \min(K, \log_2(|\mathcal{I}_u|)))
   $$
-  对于兴趣较为单一的用户，这可以节省很多的计算和存储开销。
+  对于兴趣较为单一的用户，这可以节省很多的计算和存储开销。（PS：在具体实现层面，动态的 $K$ 是通过掩码来实现的）
 
 ### Label-aware Attention Layer
 
@@ -130,16 +132,25 @@ $$
 1. *YouTube DNN*: 当MIND的胶囊数 $K=1$ 时，MIND就退化为 *YouTube DNN*。
 2. *DIN*: DIN和MIND都致力于捕捉用户兴趣的多个层面，但是DIN是在物品层面使用了注意力机制，而MIND是在兴趣层面使用了注意力机制；DIN主要用于重排阶段，此时处理的是千级的物品，但是MIND通过对用户和物品的表示进行解耦，可以用于需要面对亿级产品的召回问题。
 
-## 4. 代码实现Comments
+## 4. 业务洞察
 
-为突出主要逻辑，模型和输入有一定的简化：
+1. 当时大多数的深度学习推荐模型（如 YouTube DNN 等）通常用一个单一的固定长度向量来表示一个用户，但用户的兴趣往往是**多样且多面性的**，将所有这些不同的兴趣强行压缩到一个向量中，会导致信息的严重丢失，无法准确捕捉用户兴趣的丰富变化，从而限制推荐系统的召回能力。
+2. **匹配（召回）阶段决定了推荐效果的上限**。如果匹配阶段无法召回用户感兴趣的“小众”或“即时”兴趣商品，后续的排序阶段模型再强也无济于事。因此，在匹配阶段就引入多兴趣建模是提升整体效果的关键。
 
-1. 使用的是[Amazon Review](https://nijianmo.github.io/amazon/index.html)的数据，当前仅使用了用户与物品交互的csv数据表，表中的列为item, user, rating, timestamp。实际场景中应使用物品全集（[Amazon Review](https://nijianmo.github.io/amazon/index.html)中的metadata）作为召回的候选集。
-2. 当前没有用到用户除ID外的特征（代码中已相应的处理逻辑，只是没有使用到），也没有用到物品除ID外的特征（这部分只需在模型中为每个类别特征再分别创建Embedding矩阵，所有特征Embedding后再增加一个平均池化的处理即可）。
-3. 为便于构造样本，当前的数据划分方式中，训练集和测试集中的user没有重叠，会导致user profile实际上没有发挥作用。
-4. 召回topK个物品时，计算了所有候选物品的logit，没有用ANN。
+## 5. 代码实现Comments
 
-## 5. 参考内容链接
+### ✨ Features
+
+- ✅ 支持用户静态特征（即架构图中的*Other Features* / 论文中的*user profile*，如用户年龄和性别）
+- ✅ 支持物品静态特征
+- ✅ 支持根据用户交互历史动态调整 $K$ 值（mask capsules）
+- ✅ 支持对用户交互历史中表示padding的item进行掩码（mask items）
+
+为突出主要逻辑，测试demo有一定的简化：
+
+1. 召回topK个物品时，计算了所有候选物品的logit，没有用ANN。
+
+## 6. 参考内容链接
 
 1. [Multi-Interest Network with Dynamic Routing for Recommendation at Tmall](https://arxiv.org/pdf/1904.08030)
 2. [FunRec推荐系统 2.3.1.1节]([2.3.1. 深化用户兴趣表示 — FunRec 推荐系统 0.0.1 documentation](https://datawhalechina.github.io/fun-rec/chapter_1_retrieval/3.sequence/1.user_interests.html))
