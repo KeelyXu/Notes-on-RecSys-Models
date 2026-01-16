@@ -5,7 +5,7 @@ from Datasets.MovieLens.utils import *
 from model import MIND
 
 
-def train(model, train_set):
+def train(model: MIND, train_set):
     device = model.device
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
@@ -30,7 +30,7 @@ def train(model, train_set):
 
         print(f"Epoch {epoch} | Loss {total_loss:.3f}")
 
-def test(model, test_set, top_k=20):
+def test(model: MIND, test_set, top_k=20):
     device = model.device
     model = model.to(device)
 

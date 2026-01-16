@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from Utils.sample import generate_negative_samples
 
 
 class MIND(nn.Module):
@@ -116,7 +117,7 @@ class MIND(nn.Module):
         cap_mask = self._get_capsule_mask(history).unsqueeze(2)   # [batch_size, K, 1]
         mask = item_mask | cap_mask     # [batch_size, K, max_len]
 
-        # Get embeddings of items
+        # get embeddings of items
         item_embeds = self.get_item_embedding(history) # [batch, max_len, d]
 
         # avoid calculate this repeatedly
@@ -174,32 +175,26 @@ class MIND(nn.Module):
 
         return score
 
-    def sampled_softmax(self, caps, cap_mask, target_item, history, p=2.0):
+    def sampled_softmax(self, caps, cap_mask, target_item, history=None, p=2.0):
         """
         Args:
             caps: [batch_size, K, d]
             cap_mask: [batch_size, K]
             target_item: [batch_size, 1]
-            history: [batch_size, max_len]
+            history: tensor of shape [batch_size, max_len] (when passed, no negative sample will be in the history) or None
             p: float
         Returns:
             tensor, tensor: [batch_size, self.num_neg + 1], [batch_size, self.num_neg + 1]
         """
         batch_size = caps.shape[0]
-        # negative items should not be in the history as well as be the target item
-        # to avoid loop and do calculation efficiently, when the unwanted negative items are included, mask them
-        neg_items = torch.randint(1, self.item_pool_size, (batch_size, self.num_neg), device=self.device)    # [batch_size, self.num_neg]
-        target_items = torch.cat([target_item, neg_items], dim=1)   # [batch_size, self.num_neg + 1]
-
-        # check validity of "negative" samples
-        # history.unsqueeze(1): [batch_size, 1, max_len]
-        # neg_items.unsqueeze(-1): [batch_size, self.num_neg, 1]
-        history_hit = (history.unsqueeze(1) == neg_items.unsqueeze(-1))     # [batch_size, self.num_neg, max_len]
-        mask = history_hit.any(dim=-1) | (neg_items == target_item)     # [batch_size, self.num_neg]
-        mask = torch.concat([torch.zeros((batch_size, 1), dtype=torch.bool, device=mask.device), mask], dim=1)  # [batch_size, self.num_neg + 1]
+        sampled_items, mask = generate_negative_samples(target_item=target_item,
+                                                        item_pool_size=self.item_pool_size,
+                                                        num_neg=self.num_neg,
+                                                        device=self.device,
+                                                        history=history)
 
         # calculate logits
-        logits = self.layer_aware_attention(caps, cap_mask, target_items, p=p)    # [batch_size, self.num_neg + 1]
+        logits = self.layer_aware_attention(caps, cap_mask, sampled_items, p=p)    # [batch_size, self.num_neg + 1]
         logits_masked = logits.masked_fill(mask, -1e9)                  # [batch_size, self.num_neg + 1]
         labels = torch.concat([torch.ones(batch_size, 1), torch.zeros(batch_size, self.num_neg)], dim=1).to(self.device)  # [batch_size, self.num_neg + 1]
 
