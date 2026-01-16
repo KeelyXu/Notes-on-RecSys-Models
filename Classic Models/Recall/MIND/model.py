@@ -6,8 +6,8 @@ import torch.nn.functional as F
 class MIND(nn.Module):
 
     def __init__(self, d: int, K: int,
-                 user_profile_embed_dim: dict,
-                 item_profile_n_cat: dict,
+                 user_feats_embed_dim: dict[str, tuple[int, int]],
+                 item_feats_n_cat: dict[str, int],
                  item_feats: torch.Tensor,
                  item_feat_names: list[str],
                  item_pool_size: int, 
@@ -15,11 +15,11 @@ class MIND(nn.Module):
                  dynamic_K: bool=True,
                  iter_num: int=3, device: str='cpu'):
         """
-        Args
+        Args:
             d: dimension of item vec
             K: max (when dynamic_K=True) number of capsules
-            user_profile_embed_dim: a dict specifying the embedding dimension of each feature in user profile (include user ID)
-            item_profile_n_cat: a dict specifying the number of categories of each feature in item profile
+            user_feats_embed_dim: a dict specifying n_cat and embed dim of each feature in user profile (include user ID)
+            item_feats_n_cat: a dict specifying the n_cat of each feature in item profile
             item_feats: a tensor of shape [item_pool_size, num_feats]
             item_feat_names: a list, the i-th element specify the name of i-th feature in item_feats
             item_pool_size: size of item pool (include padding item)
@@ -44,12 +44,12 @@ class MIND(nn.Module):
         # Embedding layer
         self.itemIdEmbeds = nn.Embedding(item_pool_size, d, padding_idx=0)
         self.itemEmbeds = nn.ModuleDict()
-        for feat_name, n_cat in item_profile_n_cat.items():
+        for feat_name, n_cat in item_feats_n_cat.items():
             self.itemEmbeds[feat_name] = nn.Embedding(n_cat, d)
 
         self.userEmbeds = nn.ModuleDict()
         self.user_profile_dim = 0
-        for feat_name, (n_cat, embed_dim) in user_profile_embed_dim.items():
+        for feat_name, (n_cat, embed_dim) in user_feats_embed_dim.items():
             self.userEmbeds[feat_name] = nn.Embedding(n_cat, embed_dim)
             self.user_profile_dim += embed_dim
         

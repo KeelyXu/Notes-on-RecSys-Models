@@ -94,8 +94,8 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     item_pool_size = movies['movie_id'].max() + 1
     model = MIND(d=d, K=K,
-                 user_profile_embed_dim=user_profile_embed_dim,
-                 item_profile_n_cat=item_profile_n_cat,
+                 user_feats_embed_dim=user_profile_embed_dim,
+                 item_feats_n_cat=item_profile_n_cat,
                  item_feats=item_feats_tensor,
                  item_feat_names=feat_names,
                  item_pool_size=item_pool_size,
