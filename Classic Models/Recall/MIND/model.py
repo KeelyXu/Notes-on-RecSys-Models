@@ -196,6 +196,6 @@ class MIND(nn.Module):
         # calculate logits
         logits = self.layer_aware_attention(caps, cap_mask, sampled_items, p=p)    # [batch_size, self.num_neg + 1]
         logits_masked = logits.masked_fill(mask, -1e9)                  # [batch_size, self.num_neg + 1]
-        labels = torch.concat([torch.ones(batch_size, 1), torch.zeros(batch_size, self.num_neg)], dim=1).to(self.device)  # [batch_size, self.num_neg + 1]
+        labels = torch.zeros(batch_size, dtype=torch.long).to(self.device)  # [batch_size]
 
         return logits_masked, labels

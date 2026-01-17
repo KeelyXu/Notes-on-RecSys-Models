@@ -14,7 +14,7 @@ def train(model: MIND, train_set):
     model.train()
     for epoch in range(1, n_epochs + 1):
         total_loss = 0.0
-        for batch in tqdm(train_set):
+        for batch in tqdm(train_set, desc=f"Epoch {epoch}"):
             history = batch["behavior_seq"].to(device)
             user_profile = {feat_name: feat.to(device) for feat_name, feat in batch["user_features"].items()}
             item_ids = batch["item_ids"].to(device)
@@ -35,9 +35,11 @@ def test(model: MIND, test_set, top_k=20):
     model = model.to(device)
 
     model.eval()
+    all_target_items = []
+    all_recall_items = []
     with torch.no_grad():
         item_embeds = model.get_item_embedding(torch.arange(item_pool_size, device=device))  # [num_items, d]
-        for batch in tqdm(test_set):
+        for batch in tqdm(test_set, desc="Testing"):
             history = batch["behavior_seq"].to(device)
             user_profile = {feat_name: feat.to(device) for feat_name, feat in batch["user_features"].items()}
             target_items = batch["item_ids"]
@@ -46,13 +48,15 @@ def test(model: MIND, test_set, top_k=20):
             logits = torch.matmul(caps, item_embeds.T)          # [batch_size, K, num_items]
             logits = logits.masked_fill(cap_mask.unsqueeze(2), -1e9)         # [batch_size, K, num_items]
             logits[:, :, 0] = -1e9                                           # mask padding item
-            max_logits = logits.max(dim=1).values.detach().cpu().numpy()     # [batch_size, num_items]
+            max_logits, _ = logits.max(dim=1)     # [batch_size, num_items]
             # get top_k with the highest logits
-            recall_items = np.argpartition(max_logits, kth=max_logits.shape[1] - top_k, axis=1)[:, -top_k:]  # [batch_size, top_k]
-            recall_items = recall_items.tolist()
+            _, top_indices = torch.topk(max_logits, k=top_k, dim=1)     # [batch_size, top_k]
+            recall_items = top_indices.cpu().numpy().tolist()
+            all_target_items.extend(target_items)
+            all_recall_items.extend(recall_items)
 
-    print(f"recall@{top_k}: {recall_at_k(target_items, recall_items, top_k)}, "
-          f"hitRate@{top_k}: {hit_rate_at_k(target_items, recall_items, top_k)}")
+    print(f"recall@{top_k}: {recall_at_k(all_target_items, all_recall_items, top_k)}, "
+          f"hitRate@{top_k}: {hit_rate_at_k(all_target_items, all_recall_items, top_k)}")
 
 
 if __name__ == "__main__":
