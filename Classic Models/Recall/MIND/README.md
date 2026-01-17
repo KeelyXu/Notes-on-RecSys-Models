@@ -141,7 +141,7 @@ $$
 
 ### ✨ Features
 
-- ✅ 支持用户静态特征（即架构图中的*Other Features* / 论文中的*user profile*，如用户年龄和性别）
+- ✅ 支持用户静态类别特征（即架构图中的*Other Features* / 论文中的*user profile*，如用户年龄和性别）
 - ✅ 支持物品静态特征
 - ✅ 支持根据用户交互历史动态调整 $K$ 值（mask capsules）
 - ✅ 支持对用户交互历史中表示padding的item进行掩码（mask items）
