@@ -89,6 +89,66 @@ def convert_item_feats_into_tensor(movies: pd.DataFrame) -> (torch.Tensor, list[
     item_pool_tensor = torch.LongTensor(item_pool_numpy)
     return item_pool_tensor, feat_cols
 
+def make_samples(all_histories: dict[str, list[int]], ratios: list[float]|None = None, min_len: int=5):
+    train_samples = []
+    val_samples = []
+    test_samples = []
+
+    # Normalize rations
+    if ratios:
+        sum_ratios = sum(ratios)
+        ratios = [ratio / sum_ratios for ratio in ratios]
+
+    print(f"Splitting data (Mode: {'Leave-One-Out' if ratios is None else 'Ratio ' + str(ratios)})...")
+    for user_id, history in all_histories.items():
+        L = len(history)
+        if L < min_len:
+            continue
+
+        if ratios is None:
+            num_test = 1
+            num_val = 1
+        else:
+            num_test = max(1, int(L * ratios[2]))
+            num_val = max(1, int(L * ratios[1]))
+
+        # make sure every train sample has history of at least one item
+        if L - num_test - num_val < 2:
+            continue
+
+        # history: [i_1, i_2, ..., i_T-2, i_T-1, i_T]
+        # idx is the index of the TARGET item in the history list
+
+        # Test samples: [L - num_test, L)
+        for i in range(L - num_test, L):
+            test_samples.append({
+                "user_id": user_id,
+                "item_id": history[i],
+                "idx": i
+            })
+
+        # Validation Samples: [L - num_test - num_val, L - num_test)
+        for i in range(L - num_test - num_val, L - num_test):
+            val_samples.append({
+                "user_id": user_id,
+                "item_id": history[i],
+                "idx": i
+            })
+
+        # Train Samples: [1, L - num_test - num_val)
+        for i in range(1, L - num_test - num_val):
+            train_samples.append({
+                "user_id": user_id,
+                "item_id": history[i],
+                "idx": i
+            })
+
+    print(f"Train samples: {len(train_samples)}")
+    print(f"Val samples:   {len(val_samples)}")
+    print(f"Test samples:  {len(test_samples)}")
+
+    return train_samples, val_samples, test_samples
+
 def make_datasets(
         users: pd.DataFrame,
         ratings: pd.DataFrame,
@@ -122,74 +182,14 @@ def make_datasets(
     # Result: user_id -> list of movie_ids
     all_histories = ratings.groupby('user_id')['movie_id'].apply(list).to_dict()
 
-    train_samples = []
-    val_samples = []
-    test_samples = []
-
-    # Filtered histories (after removing short sequences)
-    final_histories = {}
-
-    # Normalize rations
-    if ratios:
-        sum_ratios = sum(ratios)
-        ratios = [ratio / sum_ratios for ratio in ratios]
-
-    print(f"Splitting data (Mode: {'Leave-One-Out' if ratios is None else 'Ratio ' + str(ratios)})...")
-    for user_id, history in all_histories.items():
-        L = len(history)
-        if L < min_len:
-            continue
-
-        if ratios is None:
-            num_test = 1
-            num_val = 1
-        else:
-            num_test = max(1, int(L * ratios[2]))
-            num_val = max(1, int(L * ratios[1]))
-
-        # make sure every train sample has history of at least one item
-        if L - num_test - num_val < 2:
-            continue
-
-        final_histories[user_id] = history
-
-        # history: [i_1, i_2, ..., i_T-2, i_T-1, i_T]
-        # idx is the index of the TARGET item in the history list
-
-        # Test samples: [L - num_test, L)
-        for i in range(L - num_test, L):
-            test_samples.append({
-                "user_id": user_id,
-                "item_id": history[i],
-                "idx": i
-            })
-
-        # Validation Samples: [L - num_test - num_val, L - num_test)
-        for i in range(L - num_test - num_val, L - num_test):
-            val_samples.append({
-                "user_id": user_id,
-                "item_id": history[i],
-                "idx": i
-            })
-
-        # Train Samples: [1, L - num_test - num_val)
-        for i in range(1, L - num_test - num_val):
-            train_samples.append({
-                "user_id": user_id,
-                "item_id": history[i],
-                "idx": i
-            })
-
-    print(f"Train samples: {len(train_samples)}")
-    print(f"Val samples:   {len(val_samples)}")
-    print(f"Test samples:  {len(test_samples)}")
+    train_samples, val_samples, test_samples = make_samples(all_histories, ratios, min_len)
 
     # Instantiate Datasets
     # Note: We pass the SAME final_histories to all datasets.
     # The 'idx' in the sample determines how much of the history is seen.
 
     train_dataset = RecallDataset(
-        user_histories=final_histories,
+        user_histories=all_histories,
         samples=train_samples,
         user_profiles=user_profiles,
         max_item_id=ratings['movie_id'].max(),
@@ -199,7 +199,7 @@ def make_datasets(
     )
 
     val_dataset = RecallDataset(
-        user_histories=final_histories,
+        user_histories=all_histories,
         samples=val_samples,
         user_profiles=user_profiles,
         max_item_id=ratings['movie_id'].max(),
@@ -209,7 +209,7 @@ def make_datasets(
     )
 
     test_dataset = RecallDataset(
-        user_histories=final_histories,
+        user_histories=all_histories,
         samples=test_samples,
         user_profiles=user_profiles,
         max_item_id=ratings['movie_id'].max(),

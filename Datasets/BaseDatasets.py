@@ -147,15 +147,17 @@ class BaseRecallDataset(Dataset, ABC):
     # Shared utility methods
     # ------------------------------------------------------------------
 
-    def pad_sequence(self, seq: list[int]):
+    def pad_sequence(self, seq: list[int], max_seq_len: int|None=None) -> tuple:
         """
         Right-pad sequence with 0, truncate from the left if too long.
         """
-        seq = seq[-self.max_seq_len :]
+        if max_seq_len is None:
+            max_seq_len = self.max_seq_len
+        seq = seq[-max_seq_len :]
         seq_len = len(seq)
 
-        if seq_len < self.max_seq_len:
-            seq = seq + [0] * (self.max_seq_len - seq_len)
+        if seq_len < max_seq_len:
+            seq = seq + [0] * (max_seq_len - seq_len)
 
         return seq, seq_len
 
