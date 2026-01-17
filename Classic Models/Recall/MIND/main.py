@@ -5,7 +5,7 @@ from Datasets.MovieLens.utils import *
 from model import MIND
 
 
-def train(model: MIND, train_set):
+def train(model: MIND, train_set, lr, n_epochs):
     device = model.device
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
@@ -14,6 +14,7 @@ def train(model: MIND, train_set):
     model.train()
     for epoch in range(1, n_epochs + 1):
         total_loss = 0.0
+        total_sample = 0
         for batch in tqdm(train_set, desc=f"Epoch {epoch}"):
             history = batch["behavior_seq"].to(device)
             user_profile = {feat_name: feat.to(device) for feat_name, feat in batch["user_features"].items()}
@@ -26,11 +27,14 @@ def train(model: MIND, train_set):
             loss.backward()
             optimizer.step()
 
-            total_loss += loss.item()
+            batch_size = history.shape[0]
+            total_loss += loss.item() * batch_size
+            total_sample += batch_size
 
-        print(f"Epoch {epoch} | Loss {total_loss:.3f}")
+        print(f"Epoch {epoch} | Avg Loss {total_loss / total_sample:.3f}")
 
-def test(model: MIND, test_set, top_k=20):
+
+def test(model: MIND, test_set, item_pool_size, top_k=20):
     device = model.device
     model = model.to(device)
 
@@ -104,8 +108,8 @@ if __name__ == "__main__":
                  item_feat_names=feat_names,
                  item_pool_size=item_pool_size,
                  max_len=max_seq_len, num_neg=num_neg, iter_num=iter_num, device=device)
-    train(model, train_loader)
+    train(model, train_loader, lr, n_epochs)
 
     # Testing
     print("Start testing...")
-    test(model, test_loader)
+    test(model, test_loader, item_pool_size)

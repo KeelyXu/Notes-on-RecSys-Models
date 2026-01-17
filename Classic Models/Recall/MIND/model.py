@@ -103,7 +103,7 @@ class MIND(nn.Module):
         """
         Args:
             history: [batch_size, max_len]
-            user_profile: a dict, each value is of shape [batch_size, 1]
+            user_profile: a dict, each value is of shape [batch_size]
         Returns:
             tensor: [batch_size, K, d], [batch_size, K]
         """
