@@ -40,6 +40,8 @@
 
 ### Sampled Softmax
 
+损失函数使用经典的sampled softmax + cross entropy。
+
 根据User（如观看历史，搜索历史）和Context（如人口统计学特征，exmaple age，用户性别等）的Embedding拼接得到的向量 $\mathbf{\vec{u}}$ 和 视频 $i$ 的Embedding向量 $\mathbf{\vec{v}}_i$，使用如下方式计算用户在时间 $t$ 观看视频 $i$ 的概率：
 $$
 P(w_t=i)=\frac{e^{\mathbf{\vec{v}}_i^T\mathbf{\vec{u}}}}{\sum_{j\in V}e^{\mathbf{\vec{v}}_j^T\mathbf{\vec{u}}}}
