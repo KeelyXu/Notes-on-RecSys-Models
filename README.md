@@ -41,6 +41,7 @@ Models are organized by the stage they are typically used in a recommendation pi
 | **YoutubeDNN** | [Deep Neural Networks for YouTube Recommendations](https://static.googleusercontent.com/media/research.google.com/zh-CN//pubs/archive/45530.pdf) | [Link](Classic%20Models/Recall/YouTubeDNN/model.py) | [📝](Classic%20Models/Recall/YouTubeDNN/README.md ) | ✅ |
 | **MIND** | [Multi-Interest Network with Dynamic Routing for Recommendation at Tmall](https://arxiv.org/pdf/1904.08030) | [Link](Classic%20Models/Recall/MIND/model.py) | [📝](Classic%20Models/Recall/MIND/README.md ) | ✅ |
 | **SDM** | [SDM: Sequential Deep Matching Model for Online Large-scale Recommender System](https://arxiv.org/pdf/1909.00385) | [Link](Classic%20Models/Recall/SDM/model.py) | [📝](Classic%20Models/Recall/SDM/README.md ) | 🚧 |
+| **HSTU** | [Actions Speak Louder than Words: Trillion-Parameter Sequential Transducers for Generative Recommendations](https://arxiv.org/pdf/2402.17152) | ❌ | [📝](Classic%20Models/Recall/HSTU/README.md ) | ✅ |
 
 ### 2. Ranking
 > *Goal: Accurately predict user preference (CTR/CVR) for the retrieved items to sort them.*
