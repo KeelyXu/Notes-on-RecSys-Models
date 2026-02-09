@@ -49,6 +49,7 @@ Models are organized by the stage they are typically used in a recommendation pi
 
 | Model | Paper / Source | Code | Note | Status |
 | :--- | :--- | :---: | :---: | :---: |
+| **DIN** | [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978) | Not implemented yet | [📝](Classic%20Models/Ranking/DIN/README.md ) | 📅 |
 
 ### 3. Re-ranking
 > *Goal: Optimize the final list for diversity, novelty, or business constraints.*
