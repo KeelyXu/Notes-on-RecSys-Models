@@ -166,11 +166,12 @@ PReLU和Dice的控制函数对比如下：
 
 ## 4. 代码实现Comments
 
-（待实现）
+1. Dice的计算思路实际上与BatchNorm和sigmoid有重叠，可以利用现成的BatchNorm函数简化代码
 
 ## 5. 参考内容链接
 
 1. [Deep Interest Network for Click-Through Rate Prediction](https://arxiv.org/pdf/1706.06978)
 2. [GitHub - zhougr1993/DeepInterestNetwork](https://github.com/zhougr1993/DeepInterestNetwork)
-3. [FunRec推荐系统 3.3.1节]([3.3. 序列建模 — FunRec 推荐系统 0.0.1 documentation](https://datawhalechina.github.io/fun-rec/chapter_2_ranking/3.sequence.html))
+3. [GitHub - shenweichen/DeepCTR-Torch: 【PyTorch】Easy-to-use,Modular and Extendible package of deep-learning based CTR models.](https://github.com/shenweichen/DeepCTR-Torch/tree/master)
+4. [FunRec推荐系统 3.3.1节]([3.3. 序列建模 — FunRec 推荐系统 0.0.1 documentation](https://datawhalechina.github.io/fun-rec/chapter_2_ranking/3.sequence.html))
 
